@@ -1,7 +1,7 @@
 module Tree.Zipper exposing
     ( Zipper, fromTree, fromForest, toTree, toForest, tree, label, children
     , firstChild, lastChild, parent, forward, backward, root, lastDescendant, nextSibling, previousSibling
-    , siblingsBeforeFocus, siblingsAfterFocus
+    , siblingsBeforeFocus, siblingsAfterFocus, swapBefore, swapAfter
     , mapTree, replaceTree, removeTree, mapLabel, replaceLabel, append, prepend
     , findNext, findPrevious, findFromRoot
     )
@@ -39,6 +39,7 @@ modify the tree structure while walking through it.
 -}
 
 import Tree exposing (Tree)
+import List.Extra
 
 
 {-| Represents a location within a tree, always pointing at the root or one of
@@ -681,6 +682,30 @@ siblingsBeforeFocus (Zipper { before }) =
 siblingsAfterFocus : Zipper a -> List (Tree a)
 siblingsAfterFocus (Zipper { after }) =
     after
+
+
+swapBefore : Zipper a -> Maybe (Zipper a)
+swapBefore (Zipper config) =
+    List.Extra.uncons config.before
+        |> Maybe.andThen (\(last, previous) ->
+            Just <| Zipper 
+                { config 
+                    | before = previous
+                    , after = last :: config.after
+                }
+        )
+
+
+swapAfter : Zipper a -> Maybe (Zipper a)
+swapAfter (Zipper config) =
+    List.Extra.uncons config.after
+        |> Maybe.andThen (\(first, next) ->
+            Just <| Zipper 
+                { config 
+                    | before = first :: config.before 
+                    , after = next
+                }
+        )
 
 
 {-| Execute a function on the currently focused tree, replacing it in the zipper.
